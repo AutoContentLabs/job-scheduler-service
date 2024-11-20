@@ -1,0 +1,32 @@
+services:
+
+  data-scheduler-service:
+    build:
+      context: ../../
+      dockerfile: .docker/production/Dockerfile
+    env_file:
+      - .env.${APP_ENV}
+    networks:
+      - network_shared
+    volumes:
+      - logs:/workspaces/app/logs
+      - sites:/workspaces/app/tmp
+    restart: always
+    command: "npm start"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    # mem_limit: 2048M           
+    cpus: "0.3"
+
+volumes:
+  logs:
+  sites:
+
+
+networks:
+  network_shared:
+    # docker network create network_shared
+    external: true # Ensure this network exists or create it manually
