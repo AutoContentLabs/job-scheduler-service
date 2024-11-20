@@ -10,7 +10,6 @@ services:
       - network_shared
     volumes:
       - logs:/workspaces/app/logs
-      - sites:/workspaces/app/tmp
     restart: always
     command: "npm start"
     logging:
