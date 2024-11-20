@@ -9,7 +9,7 @@ services:
     networks:
       - network_shared
     volumes:
-      - ./logs:/workspaces/app/logs
+      - logs:/workspaces/app/logs
     command: "npm start"
     logging:
       driver: "json-file"
