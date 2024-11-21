@@ -1,4 +1,4 @@
-// sendRequest.js
+// src\sendRequest.js
 const { sendDataCollectRequestRequest } = require('@auto-content-labs/messaging');
 const { logger } = require('@auto-content-labs/messaging');
 
