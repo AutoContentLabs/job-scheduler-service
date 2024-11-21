@@ -1,6 +1,6 @@
 services:
 
-  data-scheduler-service:
+  service:
     build:
       context: ../../
       dockerfile: .docker/production/Dockerfile
