@@ -17,7 +17,7 @@ function calculateBatchSize(totalMessages, messageSize) {
     batchSize = Math.min(100, totalMessages); // big batch
   }
 
-  // maksimum batch size
+  // 
   const batchSizeInBytes = batchSize * avgMessageSize;
   if (batchSizeInBytes > maxBatchSize) {
     batchSize = Math.floor(maxBatchSize / avgMessageSize);

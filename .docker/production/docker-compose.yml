@@ -10,6 +10,7 @@ services:
       - network_shared
     volumes:
       - logs:/workspaces/app/logs
+      - files:/workspaces/app/files
     command: "npm start"
     logging:
       driver: "json-file"
@@ -19,6 +20,7 @@ services:
 
 volumes:
   logs:
+  files:
 
 
 networks:
