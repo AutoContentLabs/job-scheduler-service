@@ -4,7 +4,7 @@ const getDomains = require('./getDomains');
 const sendRequest = require('./sendRequest');
 
 const file = "domains.csv";
-const CONCURRENT_TASKS_LIMIT = 10;
+const CONCURRENT_TASKS_LIMIT = 50;
 
 let taskCount = 0;
 let processedCount = 0;
