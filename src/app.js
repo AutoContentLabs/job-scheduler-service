@@ -2,24 +2,23 @@
 const { logger, helper } = require('@auto-content-labs/messaging');
 const getDomains = require('./getDomains');
 const sendRequest = require('./sendRequest');
-
+const calculateBatchSize = require("./batchSize");
 const file = "domains.csv";
-const CONCURRENT_TASKS_LIMIT = 50;
 
 let taskCount = 0;
 let processedCount = 0;
 let failedCount = 0;
 
-/**
- * 
- */
 async function processDomains() {
   const domains = await getDomains(file);
 
-  //
+  const CONCURRENT_TASKS_LIMIT = calculateBatchSize(domains.length, 512); // 512 byte varsayılan mesaj boyutu
+
   for (let i = 0; i < domains.length; i += CONCURRENT_TASKS_LIMIT) {
-    // slice a small
+
     const chunk = domains.slice(i, i + CONCURRENT_TASKS_LIMIT);
+
+
     const tasks = chunk.map((domain, index) => {
       taskCount++;
       const id = `${taskCount}`;
@@ -33,14 +32,10 @@ async function processDomains() {
         .catch(() => failedCount++);
     });
 
-    // next other cluster
     await Promise.all(tasks);
   }
 }
 
-/**
- * 
- */
 async function start() {
   try {
     logger.info("Application starting...");
@@ -53,9 +48,6 @@ async function start() {
   }
 }
 
-/**
- * Graceful shutdown handler.
- */
 function handleShutdown() {
   logger.info("Application shutting down...");
   process.exit(0);
