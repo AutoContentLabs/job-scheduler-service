@@ -3,6 +3,7 @@ const { logger, helper } = require('@auto-content-labs/messaging');
 const getDomains = require('./getDomains');
 const sendRequest = require('./sendRequest');
 const calculateBatchSize = require("./batchSize");
+const { calculateProgress } = require("./progress");
 const fs = require('fs');
 const file = "files/domains.csv";
 const taskStatusFile = 'files/taskStatus.json';
@@ -32,9 +33,9 @@ async function processDomains() {
 
   const CONCURRENT_TASKS_LIMIT = calculateBatchSize(domains.length, 512); // Default 512 bytes
 
-  const totalTasks = domains.length;  // Total number of tasks
+  let totalTasks = domains.length;  // Total number of tasks
   let tasksProcessed = 0;  // Tracks the number of processed tasks
-  const startTime = Date.now();  // Start time of the processing
+  let startTime = Date.now();  // Start time of the processing
 
   for (let i = 0; i < domains.length; i += CONCURRENT_TASKS_LIMIT) {
     const chunk = domains.slice(i, i + CONCURRENT_TASKS_LIMIT);
@@ -61,14 +62,15 @@ async function processDomains() {
           saveTaskStatus(taskStatus); // Save status to file
           tasksProcessed++;
 
-          // Track and log progress every 10 tasks processed
-          if (tasksProcessed % 10 === 0 || tasksProcessed === totalTasks) {
-            const elapsedTime = (Date.now() - startTime) / 1000; // in seconds
-            const progressPercentage = Math.round((tasksProcessed / totalTasks) * 100);
-            const estimatedTimeRemaining = ((elapsedTime / tasksProcessed) * (totalTasks - tasksProcessed)).toFixed(2);
+          // Calculate progress and estimate remaining time using the helper function
+          const { progressPercentage, formattedElapsedTime, formattedEstimatedTimeRemaining } = calculateProgress(
+            tasksProcessed,
+            totalTasks,
+            startTime
+          );
+          if (tasksProcessed % 10 === 0 || tasksProcessed === totalTasks)
+            logger.notice(`[✨] ${progressPercentage}%. Elapsed time: ${formattedElapsedTime}s. Estimated time remaining: ${formattedEstimatedTimeRemaining}s.`);
 
-            logger.notice(`[Progress] ${progressPercentage}% completed. Elapsed time: ${elapsedTime}s. Estimated time remaining: ${estimatedTimeRemaining}s.`);
-          }
         })
         .catch(() => {
           failedCount++;
