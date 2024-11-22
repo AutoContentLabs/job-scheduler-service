@@ -55,7 +55,8 @@ async function processDomains() {
         return Promise.resolve(); // Skip already processed domains
       }
 
-      return sendRequest(id, source, params, priority, timestamp, domains.length)
+      // taskCount = total count for consumer
+      return sendRequest(id, source, params, priority, timestamp, taskCount)
         .then(() => {
           processedCount++;
           taskStatus[domain] = 'processed'; // Mark as processed
