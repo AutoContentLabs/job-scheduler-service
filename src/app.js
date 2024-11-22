@@ -12,12 +12,12 @@ let failedCount = 0;
 async function processDomains() {
   const domains = await getDomains(file);
 
-  const CONCURRENT_TASKS_LIMIT = calculateBatchSize(domains.length, 512); // 512 byte varsayılan mesaj boyutu
+  const CONCURRENT_TASKS_LIMIT = calculateBatchSize(domains.length, 512); // 512 byte default
 
   for (let i = 0; i < domains.length; i += CONCURRENT_TASKS_LIMIT) {
 
     const chunk = domains.slice(i, i + CONCURRENT_TASKS_LIMIT);
-
+    logger.notice(`[processDomains] CONCURRENT: ${CONCURRENT_TASKS_LIMIT} sending batch... `);
 
     const tasks = chunk.map((domain, index) => {
       taskCount++;
