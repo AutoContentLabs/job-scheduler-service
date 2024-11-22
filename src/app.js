@@ -47,7 +47,7 @@ async function start() {
 
     const startTime = Date.now();
     await processDomains();
-    logger.info(`Completed ${taskCount} tasks: ${processedCount} processed, ${failedCount} failed. Time: ${Date.now() - startTime}ms`);
+    logger.notice(`Completed ${taskCount} tasks: ${processedCount} processed, ${failedCount} failed. Time: ${Date.now() - startTime}ms`);
   } catch (error) {
     logger.error("Application failed to start", error);
   }

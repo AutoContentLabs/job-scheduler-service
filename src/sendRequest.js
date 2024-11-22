@@ -15,7 +15,7 @@ async function sendRequest(id, source, params, priority, timestamp) {
     await sendDataCollectRequestRequest({
       id, source, params, priority, timestamp
     });
-    logger.info(`Request sent successfully: ${id}`, { id, domain: params.url });
+    logger.notice(`[sendRequest] successfully: ${params.url}`, { id, domain: params.url });
   } catch (error) {
     logger.error(`Failed to send request: ${id} - Error: ${error.message}`, { id, domain: params.url });
   }
