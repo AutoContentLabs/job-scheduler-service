@@ -9,15 +9,16 @@ const { logger } = require('@auto-content-labs/messaging');
  * @param {Object} params 
  * @param {string} priority
  * @param {string} timestamp
+ * @param {number} total - ( optional )
  */
-async function sendRequest(id, source, params, priority, timestamp) {
+async function sendRequest(id, source, params, priority, timestamp, total) {
   try {
     await sendDataCollectRequestRequest({
-      id, source, params, priority, timestamp
+      id, source, params, priority, timestamp, total
     });
     logger.notice(`[job] successfully  : ${id} ${params.url}`, { id, domain: params.url });
   } catch (error) {
-     logger.error(`[job] Failed - Error: ${id} ${params.url}  ${error.message}`, { id, domain: params.url });
+    logger.error(`[job] Failed - Error: ${id} ${params.url}  ${error.message}`, { id, domain: params.url });
   }
 }
 
