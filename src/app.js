@@ -1,16 +1,20 @@
-// src/app.js
 const { logger, helper } = require('@auto-content-labs/messaging');
 const getDomains = require('./getDomains');
 const sendRequest = require('./sendRequest');
 const calculateBatchSize = require("./batchSize");
 const { calculateProgress } = require("./progress");
 const fs = require('fs');
-const file = "files/domains.csv";
+const path = require('path');
 const taskStatusFile = 'files/taskStatus.json';
+
+// Define directory for domain files
+const domainsDir = 'files/domains/';
 
 let taskCount = 0;
 let processedCount = 0;
 let failedCount = 0;
+
+let taskStatus = loadTaskStatus();  // Initial task status load
 
 // Load task status from the file (if exists)
 function loadTaskStatus() {
@@ -23,72 +27,77 @@ function loadTaskStatus() {
 }
 
 // Save task status to the file
-function saveTaskStatus(taskStatus) {
+function saveTaskStatus() {
   fs.writeFileSync(taskStatusFile, JSON.stringify(taskStatus, null, 2));
 }
 
+// Get all CSV domain files in the directory
+function getDomainFiles() {
+  return fs.readdirSync(domainsDir)
+    .filter(file => file.startsWith('domains_') && file.endsWith('.csv'))
+    .map(file => path.join(domainsDir, file));
+}
+
 async function processDomains() {
-  const domains = await getDomains(file);
-  const taskStatus = loadTaskStatus(); // Load existing task statuses
+  const domainFiles = getDomainFiles();
+  let totalTasks = 0;
+  let tasksProcessed = 0;
+  let startTime = Date.now();
 
-  let totalTasks = domains.length;  // Total number of tasks
-  let tasksProcessed = 0;  // Tracks the number of processed tasks
-  let startTime = Date.now();  // Start time of the processing
+  for (let file of domainFiles) {
+    const domains = await getDomains(file);
+    totalTasks += domains.length;
 
-  // 
-  const CONCURRENT_TASKS_LIMIT = await calculateBatchSize(totalTasks);
+    const CONCURRENT_TASKS_LIMIT = await calculateBatchSize(totalTasks);
 
-  for (let i = 0; i < totalTasks; i += CONCURRENT_TASKS_LIMIT) {
-    const chunk = domains.slice(i, i + CONCURRENT_TASKS_LIMIT);
-    logger.notice(`[processDomains] CONCURRENT: ${CONCURRENT_TASKS_LIMIT} sending batch... `);
+    for (let i = 0; i < domains.length; i += CONCURRENT_TASKS_LIMIT) {
+      const chunk = domains.slice(i, i + CONCURRENT_TASKS_LIMIT);
+      logger.notice(`[processDomains] CONCURRENT: ${CONCURRENT_TASKS_LIMIT} sending batch...`);
 
-    const tasks = chunk.map((domain, index) => {
-      taskCount++;
-      const id = `${taskCount}`;
-      const source = file;
-      const params = { url: domain };
-      const priority = "medium"; // "low", "medium", "high"
-      const timestamp = helper.getCurrentTimestamp();
+      const tasks = chunk.map((domain) => {
+        taskCount++;
+        const id = `${taskCount}`;
+        const source = file;
+        const params = { url: domain };
+        const priority = "medium";
+        const timestamp = helper.getCurrentTimestamp();
 
-      // Check if the domain has already been processed
-      if (taskStatus[domain] === 'processed') {
-        logger.notice(`[job] Skipping processed domain: ${domain}`);
-        return Promise.resolve(); // Skip already processed domains
-      }
+        if (taskStatus[domain] === 'processed') {
+          logger.notice(`[job] Skipping processed domain: ${domain}`);
+          return Promise.resolve(); 
+        }
 
-      // taskCount = total count for consumer
-      return sendRequest(id, source, params, priority, timestamp, taskCount)
-        .then(() => {
-          processedCount++;
-          taskStatus[domain] = 'processed'; // Mark as processed
-          saveTaskStatus(taskStatus); // Save status to file
-          tasksProcessed++;
+        return sendRequest(id, source, params, priority, timestamp, taskCount)
+          .then(() => {
+            processedCount++;
+            taskStatus[domain] = 'processed';
+            tasksProcessed++;
 
-          // Calculate progress and estimate remaining time using the helper function
-          const { progressPercentage, formattedElapsedTime, formattedEstimatedTimeRemaining } = calculateProgress(
-            tasksProcessed,
-            totalTasks,
-            startTime
-          );
-          if (tasksProcessed % 10 === 0 || tasksProcessed === totalTasks)
-            logger.notice(`[✨] ${progressPercentage}%. Elapsed time: ${formattedElapsedTime}s. Estimated time remaining: ${formattedEstimatedTimeRemaining}s.`);
+            // Calculate progress and estimated time
+            const { progressPercentage, formattedElapsedTime, formattedEstimatedTimeRemaining } = calculateProgress(
+              tasksProcessed,
+              totalTasks,
+              startTime
+            );
+            if (tasksProcessed % 10 === 0 || tasksProcessed === totalTasks)
+              logger.notice(`[✨] ${progressPercentage}%. Elapsed time: ${formattedElapsedTime}s. Estimated time remaining: ${formattedEstimatedTimeRemaining}s.`);
 
-        })
-        .catch(() => {
-          failedCount++;
-          taskStatus[domain] = 'failed'; // Mark as failed
-          saveTaskStatus(taskStatus); // Save status to file
-        });
-    });
+          })
+          .catch(() => {
+            failedCount++;
+            taskStatus[domain] = 'failed';
+          });
+      });
 
-    await Promise.all(tasks);
+      await Promise.all(tasks);
+      saveTaskStatus();  // Save task status after each batch
+    }
   }
 }
 
 async function start() {
   try {
     logger.info("Application starting...");
-
     const startTime = Date.now();
     await processDomains();
     logger.notice(`Completed ${taskCount} tasks: ${processedCount} processed, ${failedCount} failed. Time: ${Date.now() - startTime}ms`);
@@ -103,8 +112,8 @@ function handleShutdown() {
 }
 
 // Listen for process signals for graceful shutdown
-process.on("SIGINT", handleShutdown); // for Ctrl+C in terminal
-process.on("SIGTERM", handleShutdown); // for termination signal
+process.on("SIGINT", handleShutdown); 
+process.on("SIGTERM", handleShutdown); 
 
 // Start the application
 start();

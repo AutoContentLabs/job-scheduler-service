@@ -4,7 +4,7 @@
   "description": "Sends signals via Kafka to trigger other services at certain intervals.",
   "main": "index.js",
   "scripts": {
-    "start": "dotenvx run -f .env.production -- node src/app.js"
+    "start": "dotenvx run -f .env.production -- node --max-old-space-size=4096 src/app.js"
   },
   "keywords": [],
   "author": "",

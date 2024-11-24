@@ -1,11 +1,10 @@
-// src/getDomains.js
 const csv = require("csv-parser");
 const fs = require("fs");
 
 /**
  * 
- * @param {string} file - 
- * @returns {Promise<Array>}
+ * @param {string} file - Path to the CSV file
+ * @returns {Promise<Array>} - Returns an array of domain names
  */
 function getDomains(file) {
   return new Promise((resolve, reject) => {
