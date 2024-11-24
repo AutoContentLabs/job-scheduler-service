@@ -12,6 +12,7 @@
   "dependencies": {
     "@auto-content-labs/messaging": "github:AutoContentLabs/messaging",
     "@dotenvx/dotenvx": "^1.23.0",
-    "csv-parser": "^3.0.0"
+    "csv-parser": "^3.0.0",
+    "ping": "^0.4.4"
   }
 }

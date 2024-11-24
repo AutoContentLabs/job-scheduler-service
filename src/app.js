@@ -1,4 +1,4 @@
-// src\app.js
+// src/app.js
 const { logger, helper } = require('@auto-content-labs/messaging');
 const getDomains = require('./getDomains');
 const sendRequest = require('./sendRequest');
@@ -31,13 +31,14 @@ async function processDomains() {
   const domains = await getDomains(file);
   const taskStatus = loadTaskStatus(); // Load existing task statuses
 
-  const CONCURRENT_TASKS_LIMIT = calculateBatchSize(domains.length, 512); // Default 512 bytes
-
   let totalTasks = domains.length;  // Total number of tasks
   let tasksProcessed = 0;  // Tracks the number of processed tasks
   let startTime = Date.now();  // Start time of the processing
 
-  for (let i = 0; i < domains.length; i += CONCURRENT_TASKS_LIMIT) {
+  // 
+  const CONCURRENT_TASKS_LIMIT = await calculateBatchSize(totalTasks);
+
+  for (let i = 0; i < totalTasks; i += CONCURRENT_TASKS_LIMIT) {
     const chunk = domains.slice(i, i + CONCURRENT_TASKS_LIMIT);
     logger.notice(`[processDomains] CONCURRENT: ${CONCURRENT_TASKS_LIMIT} sending batch... `);
 
