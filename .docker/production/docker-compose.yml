@@ -1,16 +1,86 @@
 services:
 
-  service:
+  service-kafka:
     build:
       context: ../../
       dockerfile: .docker/production/Dockerfile
     env_file:
       - .env.${APP_ENV}
+    environment:
+      - MESSAGE_SYSTEM=kafka
     networks:
       - network_shared
     volumes:
-      - logs:/workspaces/app/logs
-      - files:/workspaces/app/files
+      - logs_job_kafka:/workspaces/app/logs
+      - files_job_kafka:/workspaces/app/files
+    command: "npm start"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: "2g"
+        reservations:
+          cpus: "1.0"
+          memory: "1g"
+      restart_policy:
+        condition: always
+      placement:
+        constraints:
+          - node.role == worker
+
+  service-rabbitmq:
+    build:
+      context: ../../
+      dockerfile: .docker/production/Dockerfile
+    env_file:
+      - .env.${APP_ENV}
+    environment:
+      - MESSAGE_SYSTEM=rabbitmq
+    networks:
+      - network_shared
+    volumes:
+      - logs_job_rabbitmq:/workspaces/app/logs
+      - files_job_rabbitmq:/workspaces/app/files
+    command: "npm start"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: "2g"
+        reservations:
+          cpus: "1.0"
+          memory: "1g"
+      restart_policy:
+        condition: always
+      placement:
+        constraints:
+          - node.role == worker
+
+  service-redis:
+    build:
+      context: ../../
+      dockerfile: .docker/production/Dockerfile
+    env_file:
+      - .env.${APP_ENV}
+    environment:
+      - MESSAGE_SYSTEM=redis
+    networks:
+      - network_shared
+    volumes:
+      - logs_job_redis:/workspaces/app/logs
+      - files_job_redis:/workspaces/app/files
     command: "npm start"
     logging:
       driver: "json-file"
@@ -33,8 +103,12 @@ services:
           - node.role == worker
 
 volumes:
-  logs:
-  files:
+  logs_job_kafka:
+  files_job_kafka:
+  logs_job_rabbitmq:
+  files_job_rabbitmq:
+  logs_job_redis:
+  files_job_redis:
 
 
 networks:
