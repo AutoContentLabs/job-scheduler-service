@@ -6,27 +6,28 @@ const { calculateProgress } = require('../utils/progress');
 const fs = require('fs');
 const path = require('path');
 const taskStatusFile = 'files/taskStatus.json';
-
-// Define domain directory
 const domainsDir = 'files/domains/';
 
 let taskCount = 0;
 let processedCount = 0;
 let failedCount = 0;
+let taskStatus = {};  // Keep task status in memory
+let changesToSave = false;
 
-let taskStatus = loadTaskStatus();  // Initial task status load
-
-function loadTaskStatus() {
+async function loadTaskStatus() {
   try {
-    const data = fs.readFileSync(taskStatusFile, 'utf-8');
-    return JSON.parse(data);
+    const data = await fs.promises.readFile(taskStatusFile, 'utf-8');
+    taskStatus = JSON.parse(data);
   } catch (error) {
-    return {}; // Return empty object if file doesn't exist
+    taskStatus = {};  // Initialize empty object if file doesn't exist
   }
 }
 
-function saveTaskStatus() {
-  fs.writeFileSync(taskStatusFile, JSON.stringify(taskStatus, null, 2));
+async function saveTaskStatus() {
+  if (changesToSave) {
+    await fs.promises.writeFile(taskStatusFile, JSON.stringify(taskStatus, null, 2));
+    changesToSave = false;  // Reset flag
+  }
 }
 
 function getDomainFiles() {
@@ -44,7 +45,6 @@ async function processDomains() {
   for (let file of domainFiles) {
     const domains = await getDomains(file);
     totalTasks += domains.length;
-
     const CONCURRENT_TASKS_LIMIT = await calculateBatchSize(totalTasks);
 
     for (let i = 0; i < domains.length; i += CONCURRENT_TASKS_LIMIT) {
@@ -60,8 +60,8 @@ async function processDomains() {
         const timestamp = helper.getCurrentTimestamp();
 
         if (taskStatus[domain] === 'processed') {
-          logger.notice(`[job] Skipping processed domain: ${domain}`);
-          return Promise.resolve(); 
+          logger.notice(`[job] [${id}] Skipping processed domain: ${domain}`);
+          return Promise.resolve();
         }
 
         return sendRequest(id, source, params, priority, timestamp, taskCount)
@@ -69,6 +69,7 @@ async function processDomains() {
             processedCount++;
             taskStatus[domain] = 'processed';
             tasksProcessed++;
+            changesToSave = true;  // Mark status change for saving
 
             const { progressPercentage, formattedElapsedTime, formattedEstimatedTimeRemaining } = calculateProgress(
               tasksProcessed,
@@ -77,16 +78,16 @@ async function processDomains() {
             );
             if (tasksProcessed % 10 === 0 || tasksProcessed === totalTasks)
               logger.notice(`[✨] ${progressPercentage}%. Elapsed time: ${formattedElapsedTime}s. Estimated time remaining: ${formattedEstimatedTimeRemaining}s.`);
-
           })
           .catch(() => {
             failedCount++;
             taskStatus[domain] = 'failed';
+            changesToSave = true;  // Mark status change for saving
           });
       });
 
       await Promise.all(tasks);
-      saveTaskStatus();  // Save task status after each batch
+      await saveTaskStatus();  // Save after each batch
     }
   }
 }
@@ -94,8 +95,10 @@ async function processDomains() {
 async function start() {
   try {
     logger.info("Application starting...");
+    await loadTaskStatus();  // Load initial task status
     const startTime = Date.now();
     await processDomains();
+    await saveTaskStatus();  // Final save
     logger.notice(`Completed ${taskCount} tasks: ${processedCount} processed, ${failedCount} failed. Time: ${Date.now() - startTime}ms`);
   } catch (error) {
     logger.error("Application failed to start", error);
