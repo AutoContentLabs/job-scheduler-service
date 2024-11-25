@@ -2,13 +2,16 @@
   "name": "job-scheduler-service",
   "version": "1.0.0",
   "description": "Sends signals via Kafka to trigger other services at certain intervals.",
-  "main": "index.js",
+  "type": "commonjs",
+  "main": "src/app.js",
   "scripts": {
-    "start": "dotenvx run -f .env.production -- node --max-old-space-size=4096 src/app.js"
+    "start": "dotenvx run -f .env.production -- node --max-old-space-size=2048 --cpu-prof --gc-interval=100 --optimize_for_size src/app.js",
+    "dev": "dotenvx run -f .env.development -- node --max-old-space-size=4096 --inspect --cpu-prof --gc-interval=100 --optimize_for_size src/app.js",
+    "test": "dotenvx run -f .env.test -- jest"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "engines": {
+    "node": ">=22"
+  },
   "dependencies": {
     "@auto-content-labs/messaging": "github:AutoContentLabs/messaging",
     "@dotenvx/dotenvx": "^1.23.0",
