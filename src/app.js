@@ -1,4 +1,5 @@
 const clusterManager = require('./cluster/clusterManager');
 
-// Cluster modunda başlatma işlemi
-clusterManager.start();
+// 
+const withCluster = process.env.NODE_ENV === "production" ? false : true
+clusterManager.start(withCluster);

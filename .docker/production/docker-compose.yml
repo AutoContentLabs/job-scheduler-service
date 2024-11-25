@@ -30,7 +30,7 @@ services:
         condition: always
       placement:
         constraints:
-          - node.role == worker        
+          - node.role == worker
 
 volumes:
   logs:
