@@ -5,7 +5,7 @@
   "type": "commonjs",
   "main": "src/app.js",
   "scripts": {
-    "start": "dotenvx run -f .env.production -- node --max-old-space-size=4096 src/app.js",
+    "start": "dotenvx run -f .env.production -- node --max-old-space-size=2048 src/app.js",
     "dev": "dotenvx run -f .env.development -- node --max-old-space-size=4096 --inspect --cpu-prof --gc-interval=60000 --optimize_for_size src/app.js",
     "test": "dotenvx run -f .env.test -- jest"
   },
