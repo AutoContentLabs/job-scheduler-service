@@ -1,5 +1,5 @@
 const cluster = require('cluster');
-const numCPUs = 1 //require('os').cpus().length;
+const numCPUs = require('os').cpus().length;
 const { logger } = require('@auto-content-labs/messaging');
 const domainProcessor = require('../services/domainProcessor');
 
