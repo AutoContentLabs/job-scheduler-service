@@ -105,4 +105,16 @@ async function start() {
   }
 }
 
+/**
+* Graceful shutdown handler for the application.
+*/
+function handleShutdown() {
+  logger.info("Application shutting down...");
+  process.exit(0);
+}
+
+// Listen for process signals for graceful shutdown
+process.on("SIGINT", handleShutdown);
+process.on("SIGTERM", handleShutdown);
+
 module.exports = { start };
