@@ -14,6 +14,9 @@ let failedCount = 0;
 let taskStatus = {};  // Keep task status in memory
 let changesToSave = false;
 
+// Check if TASK_LIMIT environment variable is set, else use default (no limit)
+const taskLimit = process.env.TASK_LIMIT ? parseInt(process.env.TASK_LIMIT, 10) : null;
+
 async function loadTaskStatus() {
   try {
     const data = await fs.promises.readFile(taskStatusFile, 'utf-8');
@@ -52,6 +55,12 @@ async function processDomains() {
       logger.notice(`[processDomains] CONCURRENT: ${CONCURRENT_TASKS_LIMIT} sending batch...`);
 
       const tasks = chunk.map((domain) => {
+        // If taskLimit is set and the limit has been reached, stop further processing
+        if (taskLimit && tasksProcessed >= taskLimit) {
+          logger.notice(`Task limit of ${taskLimit} reached. Stopping further processing.`);
+          return Promise.resolve();  // Exit early when the limit is reached
+        }
+
         taskCount++;
         const id = `${taskCount}`;
         const source = file;
@@ -88,6 +97,17 @@ async function processDomains() {
 
       await Promise.all(tasks);
       await saveTaskStatus();  // Save after each batch
+
+      // If task limit is reached, stop further processing
+      if (taskLimit && tasksProcessed >= taskLimit) {
+        logger.notice(`Task limit of ${taskLimit} reached. Stopping process.`);
+        break;
+      }
+    }
+
+    // Exit the outer loop if the task limit is reached
+    if (taskLimit && tasksProcessed >= taskLimit) {
+      break;
     }
   }
 }
