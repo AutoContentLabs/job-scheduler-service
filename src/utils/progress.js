@@ -16,22 +16,22 @@ function formatTime(seconds) {
   
   /**
    * Calculate progress percentage and estimate remaining time.
-   * @param {number} tasksProcessed - The number of tasks processed so far.
-   * @param {number} totalTasks - The total number of tasks.
+   * @param {number} processed - The number of tasks processed so far.
+   * @param {number} total - The total number of tasks.
    * @param {number} startTime - The start time of the operation (timestamp).
    * @returns {Object} - Contains formatted progress information: percentage, elapsed time, and remaining time.
    */
-  function calculateProgress(tasksProcessed, totalTasks, startTime) {
+  function calculateProgress(processed, total, startTime) {
     // Ensure we don't divide by zero
-    if (totalTasks === 0) {
-      totalTasks = 1;
+    if (total === 0) {
+      total = 1;
     }
   
     const elapsedTime = (Date.now() - startTime) / 1000; // in seconds
-    const progressPercentage = Math.round((tasksProcessed / totalTasks) * 100);
+    const progressPercentage = Math.round((processed / total) * 100);
   
     // Estimate remaining time
-    const estimatedTimeRemaining = (elapsedTime / tasksProcessed) * (totalTasks - tasksProcessed);
+    const estimatedTimeRemaining = (elapsedTime / processed) * (total - processed);
   
     const formattedElapsedTime = formatTime(elapsedTime); // Format elapsed time
     const formattedEstimatedTimeRemaining = formatTime(estimatedTimeRemaining); // Format remaining time
