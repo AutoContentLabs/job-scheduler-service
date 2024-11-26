@@ -28,22 +28,22 @@ RUN npm ci --omit=dev
 # Copy application files
 COPY . .
 
-# Create a non-root user for security reasons and use it
-RUN if [ -f /etc/alpine-release ]; then \
-  adduser -D app_user; \
-  elif [ -f /etc/debian_version ]; then \
-  adduser --disabled-password --gecos "" app_user; \
-  else \
-  useradd -m -s /bin/bash app_user; \
-  fi
+# # Create a non-root user for security reasons and use it
+# RUN if [ -f /etc/alpine-release ]; then \
+#   adduser -D app_user; \
+#   elif [ -f /etc/debian_version ]; then \
+#   adduser --disabled-password --gecos "" app_user; \
+#   else \
+#   useradd -m -s /bin/bash app_user; \
+#   fi
 
-# Ensure app_user has ownership over the application files
-RUN chown -R app_user:app_user /workspaces/app
+# # Ensure app_user has ownership over the application files
+# RUN chown -R app_user:app_user /workspaces/app
 
-# Create the logs directory and ensure the app_user has the correct permissions
-RUN mkdir -p /workspaces/app/logs && chmod 777 /workspaces/app/logs
+# # Create the logs directory and ensure the app_user has the correct permissions
+# RUN mkdir -p /workspaces/app/logs && chmod 777 /workspaces/app/logs
 
-USER app_user
+# USER app_user
 
 # Expose the application port
 EXPOSE 3000
