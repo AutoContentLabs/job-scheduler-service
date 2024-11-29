@@ -62,7 +62,14 @@ async function sendRequest(id, domain) {
 
   // Construct the URL
   const { protocol, port, path, query_parameters } = value.service.parameters;
-  const url = `${protocol}://${domain}:${port}${path ? path : ''}?${new URLSearchParams(query_parameters).toString()}`;
+
+  // Remove any null or undefined query parameters
+  const filteredQueryParams = Object.fromEntries(
+    Object.entries(query_parameters).filter(([key, value]) => value != null)
+  );
+
+  // Construct the final URL without null query parameters
+  const url = `${protocol}://${domain}:${port}${path ? path : ''}?${new URLSearchParams(filteredQueryParams).toString()}`;
 
   try {
     // Send the data collection request
