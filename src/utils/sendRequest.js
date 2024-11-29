@@ -81,10 +81,10 @@ async function sendRequest(id, domain) {
     await sendDataCollectRequest({ value });
 
     // Log success message
-    logger.notice(`[job] success  : ${id} ${url}`, { id, url });
+    logger.notice(`[sendRequest] [${id}] success  :  ${url}`, { id, url });
   } catch (error) {
     // Log error message
-    logger.error(`[job] Failed   : ${id} ${url} ${error.message}`, { id, url });
+    logger.error(`[sendRequest] [${id}] Failed   :  ${url} ${error.message}`, { id, url });
   }
 }
 

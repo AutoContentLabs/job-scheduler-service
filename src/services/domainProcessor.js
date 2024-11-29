@@ -56,7 +56,7 @@ async function processDomains() {
 
       const tasks = chunk.map((domain) => {
         if (taskLimit && tasksProcessed >= taskLimit) {
-          logger.notice(`Task limit of ${taskLimit} reached. Stopping further processing.`);
+          logger.notice(`[processDomains] Task limit of ${taskLimit} reached. Stopping further processing.`);
           return Promise.resolve();  // Exit early when the limit is reached
         }
 
@@ -64,7 +64,7 @@ async function processDomains() {
         const id = taskCount;
 
         if (taskStatus[domain] === 'processed') {
-          logger.notice(`[job] [${id}] Skipping processed domain: ${domain}`);
+          logger.notice(`[processDomains] [${id}] Skipping processed domain: ${domain}`);
           return Promise.resolve();
         }
 
@@ -94,7 +94,7 @@ async function processDomains() {
       await saveTaskStatus();
 
       if (taskLimit && tasksProcessed >= taskLimit) {
-        logger.notice(`Task limit of ${taskLimit} reached. Stopping process.`);
+        logger.notice(`[processDomains] Task limit of ${taskLimit} reached. Stopping process.`);
         break;  // Exit the loop early when the limit is reached
       }
     }
