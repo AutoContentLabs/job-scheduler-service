@@ -1,4 +1,3 @@
-// src\sendRequest.js
 const {
   sendDataCollectRequest,
   StatusType,
@@ -10,68 +9,69 @@ const {
 const { logger } = require('@auto-content-labs/messaging');
 
 /**
- * .
- * @param {string} id 
- * @param {string} domain 
+ * Sends a data collection request.
+ * @param {string} id - The unique job identifier.
+ * @param {string} domain - The domain of the service.
  */
 async function sendRequest(id, domain) {
 
+  // Construct the value object dynamically
   const value = {
     id: `job-${id}`,  // Unique request ID
     service: {
       service_id: id,  // Unique identifier for each service
-      status_type_id: StatusType.ACTIVE,  // 1: active, 2: inactive, 3: maintenance, 4: under_review, 5: suspended
-      service_type_id: ServiceType.API,  // Service Type: specifies the type of service (1:WEB, 2:API , 3:FTP, 4:DB, 5:MQ, 6:STREAM, 7:BATCH)
-      access_type_id: AccessType.RSS,  // Reference to access_types table; specifies access method (1: api, 2: rss, 3: html)
-      fetch_frequency: 300,  // Frequency (in seconds) at which data will be fetched from the external source
-      time_interval: 0,  // Time interval in which the data source provides data (0: real-time)
-      next_fetch: null,  // Timestamp for when the next fetch will occur; calculated automatically based on fetch frequency (timestamptz)
-      last_fetched: null,  // Timestamp for when the data was last fetched; updated during each fetch (timestamptz)
-      last_error_message: null,  // Stores the last error message encountered during data fetching; could be useful for debugging (any error exception)
-      access_method_id: AccessMethod.OPEN_ACCESS,  // Reference to access_method_types table; indicates how the service can be accessed (1: free, 2: open_access, 3: subscription)
-      data_format_id: DataFormat.XML,  // Reference to data_format_types table; specifies the data format (1: json, 2: xml, 3: csv, 4: html)
+      status_type_id: StatusType.ACTIVE,  // Active status
+      service_type_id: ServiceType.API,  // Service Type: API
+      access_type_id: AccessType.RSS,  // Access Type: RSS feed
+      fetch_frequency: 300,  // Frequency (in seconds)
+      time_interval: 0,  // Real-time fetching
+      next_fetch: null,  // Auto-calculated timestamp for next fetch
+      last_fetched: null,  // Timestamp for last fetched data
+      last_error_message: null,  // Stores last error message
+      access_method_id: AccessMethod.OPEN_ACCESS,  // Open access method
+      data_format_id: DataFormat.XML,  // Data format: XML
       parameters: {
-        protocol: "https",  // 
-        domain,  // 
-        port: 443,  //
-        path: null,  // 
+        protocol: "https",  // Protocol: HTTPS
+        domain,  // Domain passed in function argument
+        port: 443,  // Standard HTTPS port
+        path: null,  // No specific path, can be set dynamically
         query_parameters: {
-          geo: null  // 
+          geo: null  // Geo-location parameter (can be set dynamically)
         },
-        request_method: "GET",  // 
-        rate_limit: 100,  // 
-        rate_limit_window: 60,  // 
-        timeout: 1000,  // ms
-        retry_count: 1,  // 
-        cache_duration: 3600,  // ms
-        cache_enabled: true,  // 
-        max_connections: 5,  // 
-        api_key: null,  // 
-        logging_enabled: true,  // 
-        allowed_origins: "*",  // 
-        error_handling: "retry",  // 
-        authentication_required: false,  // 
+        request_method: "GET",  // HTTP request method
+        rate_limit: 100,  // Rate limit per window
+        rate_limit_window: 60,  // Time window for rate limit (seconds)
+        timeout: 1000,  // Timeout duration (ms)
+        retry_count: 1,  // Retry count in case of failure
+        cache_duration: 3600,  // Cache duration (ms)
+        cache_enabled: true,  // Cache is enabled
+        max_connections: 5,  // Max number of simultaneous connections
+        api_key: null,  // API key for authentication (if required)
+        logging_enabled: true,  // Enable logging
+        allowed_origins: "*",  // Allow all origins
+        error_handling: "retry",  // Error handling strategy
+        authentication_required: false,  // Whether authentication is needed
         authentication_details: {
-          type: null,  // OAuth vs...
-          location: null,  // header vs...
-          required: false  // 
+          type: null,  // Authentication type (OAuth, etc.)
+          location: null,  // Header or body location for credentials
+          required: false  // If authentication is required
         }
       }
     }
-  }
-  const pair = { value }
+  };
 
   // Construct the URL
-  const { protocol, port, path, query_parameters, request_method, rate_limit, rate_limit_window, timeout, retry_count, cache_duration, cache_enabled, max_connections, api_key, logging_enabled, allowed_origins, error_handling, authentication_required, authentication_details } = value.service.parameters;
-  const url = `${protocol}://${domain}:${port}${path}?${new URLSearchParams(query_parameters).toString()}`;
+  const { protocol, port, path, query_parameters } = value.service.parameters;
+  const url = `${protocol}://${domain}:${port}${path ? path : ''}?${new URLSearchParams(query_parameters).toString()}`;
 
   try {
+    // Send the data collection request
+    await sendDataCollectRequest({ value });
 
-    // 
-    await sendDataCollectRequest(pair);
-
+    // Log success message
     logger.notice(`[job] success  : ${id} ${url}`, { id, url });
   } catch (error) {
+    // Log error message
     logger.error(`[job] Failed   : ${id} ${url} ${error.message}`, { id, url });
   }
 }
