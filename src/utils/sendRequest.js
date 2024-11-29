@@ -32,7 +32,7 @@ async function sendRequest(id, domain) {
       data_format_id: DataFormat.XML,  // Reference to data_format_types table; specifies the data format (1: json, 2: xml, 3: csv, 4: html)
       parameters: {
         protocol: "https",  // 
-        domain: domain,  // 
+        domain,  // 
         port: 443,  //
         path: null,  // 
         query_parameters: {
@@ -62,7 +62,7 @@ async function sendRequest(id, domain) {
   const pair = { value }
 
   // Construct the URL
-  const { protocol, domain, port, path, query_parameters, request_method, rate_limit, rate_limit_window, timeout, retry_count, cache_duration, cache_enabled, max_connections, api_key, logging_enabled, allowed_origins, error_handling, authentication_required, authentication_details } = value.service.parameters;
+  const { protocol, port, path, query_parameters, request_method, rate_limit, rate_limit_window, timeout, retry_count, cache_duration, cache_enabled, max_connections, api_key, logging_enabled, allowed_origins, error_handling, authentication_required, authentication_details } = value.service.parameters;
   const url = `${protocol}://${domain}:${port}${path}?${new URLSearchParams(query_parameters).toString()}`;
 
   try {
