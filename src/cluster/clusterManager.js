@@ -4,12 +4,17 @@ const { logger } = require('@auto-content-labs/messaging');
 const domainProcessor = require('../services/domainProcessor');
 
 function start(withCluster = process.env.NODE_ENV !== 'production') {
+  // # Default number of workers: 
+  // # If the WORKER_COUNT environmental variable is not defined,
+  // # the system automatically starts numCPUs (number of CPUs available) workers.
+  const workerCount = process.env.WORKER_COUNT ? parseInt(process.env.WORKER_COUNT, 10) : numCPUs;
+
   if (withCluster) {
     if (cluster.isMaster) {
-      logger.info(`Master process is starting...`);
+      logger.info(`Master process is starting with ${workerCount} workers...`);
 
-      // Forking workers
-      for (let i = 0; i < numCPUs; i++) {
+      // Forking workers based on WORKER_COUNT
+      for (let i = 0; i < workerCount; i++) {
         cluster.fork();
       }
 
