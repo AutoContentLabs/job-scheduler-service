@@ -48,14 +48,13 @@ async function processDomains() {
   for (let file of domainFiles) {
     const domains = await getDomains(file);
     totalTasks += domains.length;
-    const CONCURRENT_TASKS_LIMIT = await calculateBatchSize(totalTasks);
+    const CONCURRENT_TASKS_LIMIT = Math.min(await calculateBatchSize(totalTasks), taskLimit ? taskLimit - tasksProcessed : Number.MAX_SAFE_INTEGER);
 
     for (let i = 0; i < domains.length; i += CONCURRENT_TASKS_LIMIT) {
       const chunk = domains.slice(i, i + CONCURRENT_TASKS_LIMIT);
       logger.notice(`[processDomains] CONCURRENT: ${CONCURRENT_TASKS_LIMIT} sending batch...`);
 
       const tasks = chunk.map((domain) => {
-        // If taskLimit is set and the limit has been reached, stop further processing
         if (taskLimit && tasksProcessed >= taskLimit) {
           logger.notice(`Task limit of ${taskLimit} reached. Stopping further processing.`);
           return Promise.resolve();  // Exit early when the limit is reached
@@ -74,7 +73,7 @@ async function processDomains() {
             processedCount++;
             taskStatus[domain] = 'processed';
             tasksProcessed++;
-            changesToSave = true;  // Mark status change for saving
+            changesToSave = true;
 
             const { progressPercentage, formattedElapsedTime, formattedEstimatedTimeRemaining } = calculateProgress(
               tasksProcessed,
@@ -87,26 +86,25 @@ async function processDomains() {
           .catch(() => {
             failedCount++;
             taskStatus[domain] = 'failed';
-            changesToSave = true;  // Mark status change for saving
+            changesToSave = true;
           });
       });
 
       await Promise.all(tasks);
-      await saveTaskStatus();  // Save after each batch
+      await saveTaskStatus();
 
-      // If task limit is reached, stop further processing
       if (taskLimit && tasksProcessed >= taskLimit) {
         logger.notice(`Task limit of ${taskLimit} reached. Stopping process.`);
-        break;
+        break;  // Exit the loop early when the limit is reached
       }
     }
 
-    // Exit the outer loop if the task limit is reached
     if (taskLimit && tasksProcessed >= taskLimit) {
-      break;
+      break;  // Exit the outer loop if task limit is reached
     }
   }
 }
+
 
 async function start() {
   try {
