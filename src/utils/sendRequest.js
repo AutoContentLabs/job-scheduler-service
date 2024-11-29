@@ -68,8 +68,13 @@ async function sendRequest(id, domain) {
     Object.entries(query_parameters).filter(([key, value]) => value != null)
   );
 
-  // Construct the final URL without null query parameters
-  const url = `${protocol}://${domain}:${port}${path ? path : ''}?${new URLSearchParams(filteredQueryParams).toString()}`;
+  // Construct the query string only if there are query parameters
+  const queryString = Object.keys(filteredQueryParams).length > 0
+    ? `?${new URLSearchParams(filteredQueryParams).toString()}`
+    : '';
+
+  // Construct the final URL without trailing ?
+  const url = `${protocol}://${domain}:${port}${path ? path : ''}${queryString}`;
 
   try {
     // Send the data collection request
