@@ -63,17 +63,13 @@ async function processDomains() {
 
         taskCount++;
         const id = `${taskCount}`;
-        const source = file;
-        const params = { url: domain };
-        const priority = "medium";
-        const timestamp = helper.getCurrentTimestamp();
 
         if (taskStatus[domain] === 'processed') {
           logger.notice(`[job] [${id}] Skipping processed domain: ${domain}`);
           return Promise.resolve();
         }
 
-        return sendRequest(id, source, params, priority, timestamp, taskCount)
+        return sendRequest(id, domain)
           .then(() => {
             processedCount++;
             taskStatus[domain] = 'processed';
