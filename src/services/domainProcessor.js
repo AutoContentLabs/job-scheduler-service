@@ -61,7 +61,7 @@ async function processDomains() {
         }
 
         taskCount++;
-        const id = `${taskCount}`;
+        const id = taskCount;
 
         if (taskStatus[domain] === 'processed') {
           logger.notice(`[job] [${id}] Skipping processed domain: ${domain}`);
