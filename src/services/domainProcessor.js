@@ -52,11 +52,11 @@ async function processDomains() {
 
     for (let i = 0; i < domains.length; i += CONCURRENT_TASKS_LIMIT) {
       const chunk = domains.slice(i, i + CONCURRENT_TASKS_LIMIT);
-      logger.notice(`[processDomains] CONCURRENT: ${CONCURRENT_TASKS_LIMIT} sending batch...`);
+      logger.info(`[processDomains] CONCURRENT: ${CONCURRENT_TASKS_LIMIT} sending batch...`);
 
       const tasks = chunk.map((domain) => {
         if (taskLimit && tasksProcessed >= taskLimit) {
-          logger.notice(`[processDomains] Task limit of ${taskLimit} reached. Stopping further processing.`);
+          logger.info(`[processDomains] Task limit of ${taskLimit} reached. Stopping further processing.`);
           return Promise.resolve();  // Exit early when the limit is reached
         }
 
@@ -64,7 +64,7 @@ async function processDomains() {
         const id = taskCount;
 
         if (taskStatus[domain] === 'processed') {
-          logger.notice(`[processDomains] [${id}] Skipping processed domain: ${domain}`);
+          logger.info(`[processDomains] [${id}] Skipping processed domain: ${domain}`);
           return Promise.resolve();
         }
 
@@ -98,7 +98,7 @@ async function processDomains() {
       await saveTaskStatus();
 
       if (taskLimit && tasksProcessed >= taskLimit) {
-        logger.notice(`[processDomains] Task limit of ${taskLimit} reached. Stopping process.`);
+        logger.infos(`[processDomains] Task limit of ${taskLimit} reached. Stopping process.`);
         break;  // Exit the loop early when the limit is reached
       }
     }
