@@ -80,8 +80,12 @@ async function processDomains() {
               totalTasks,
               startTime
             );
-            if (tasksProcessed % 10 === 0 || tasksProcessed === totalTasks)
-              logger.notice(`[✨] ${progressPercentage}%. Elapsed time: ${formattedElapsedTime}s. Estimated time remaining: ${formattedEstimatedTimeRemaining}s.`);
+            if (tasksProcessed % 10 === 0 || tasksProcessed === totalTasks) {
+              // The actual calculation is not correct!
+              // we need to fix
+              //logger.notice(`[✨] ${progressPercentage}%. Elapsed time: ${formattedElapsedTime}s. Estimated time remaining: ${formattedEstimatedTimeRemaining}s.`);
+            }
+
           })
           .catch(() => {
             failedCount++;
