@@ -98,7 +98,7 @@ async function processDomains() {
       await saveTaskStatus();
 
       if (taskLimit && tasksProcessed >= taskLimit) {
-        logger.infos(`[processDomains] Task limit of ${taskLimit} reached. Stopping process.`);
+        logger.info(`[processDomains] Task limit of ${taskLimit} reached. Stopping process.`);
         break;  // Exit the loop early when the limit is reached
       }
     }
