@@ -54,10 +54,10 @@ async function processDomains() {
       const chunk = domains.slice(i, i + CONCURRENT_TASKS_LIMIT);
       logger.info(`[processDomains] CONCURRENT: ${CONCURRENT_TASKS_LIMIT} sending batch...`);
 
-      const tasks = chunk.map((domain) => {
+      const tasks = chunk.map(async (domain) => {  // map içine async işaretini ekliyoruz
         if (taskLimit && tasksProcessed >= taskLimit) {
           logger.info(`[processDomains] Task limit of ${taskLimit} reached. Stopping further processing.`);
-          return Promise.resolve();  // Exit early when the limit is reached
+          return;  // Task limitine ulaşıldığında işleme devam etmiyoruz
         }
 
         taskCount++;
@@ -65,49 +65,48 @@ async function processDomains() {
 
         if (taskStatus[domain] === 'processed') {
           logger.info(`[processDomains] [${id}] Skipping processed domain: ${domain}`);
-          return Promise.resolve();
+          return;  // İşlem yapılmış domainleri atlıyoruz
         }
 
-        return sendRequest(id, domain)
-          .then(() => {
-            processedCount++;
-            taskStatus[domain] = 'processed';
-            tasksProcessed++;
-            changesToSave = true;
+        try {
+          await sendRequest(id, domain);  // sendRequest'i await ile çağırıyoruz
 
-            const { progressPercentage, formattedElapsedTime, formattedEstimatedTimeRemaining } = calculateProgress(
-              tasksProcessed,
-              totalTasks,
-              startTime
-            );
-            if (tasksProcessed % 10 === 0 || tasksProcessed === totalTasks) {
-              // The actual calculation is not correct!
-              // we need to fix
-              //logger.notice(`[✨] ${progressPercentage}%. Elapsed time: ${formattedElapsedTime}s. Estimated time remaining: ${formattedEstimatedTimeRemaining}s.`);
-            }
+          processedCount++;
+          taskStatus[domain] = 'processed';
+          tasksProcessed++;
+          changesToSave = true;
 
-          })
-          .catch(() => {
-            failedCount++;
-            taskStatus[domain] = 'failed';
-            changesToSave = true;
-          });
+          const { progressPercentage, formattedElapsedTime, formattedEstimatedTimeRemaining } = calculateProgress(
+            tasksProcessed,
+            totalTasks,
+            startTime
+          );
+          if (tasksProcessed % 10 === 0 || tasksProcessed === totalTasks) {
+            //logger.notice(`[✨] ${progressPercentage}%. Elapsed time: ${formattedElapsedTime}s. Estimated time remaining: ${formattedEstimatedTimeRemaining}s.`);
+          }
+
+        } catch (error) {
+          failedCount++;
+          taskStatus[domain] = 'failed';
+          changesToSave = true;
+        }
       });
 
-      await Promise.all(tasks);
+      await Promise.all(tasks);  // Bütün task'lar tamamlanana kadar bekliyoruz
       await saveTaskStatus();
 
       if (taskLimit && tasksProcessed >= taskLimit) {
         logger.info(`[processDomains] Task limit of ${taskLimit} reached. Stopping process.`);
-        break;  // Exit the loop early when the limit is reached
+        break;  // Task limiti aşıldığında dış döngüden çıkıyoruz
       }
     }
 
     if (taskLimit && tasksProcessed >= taskLimit) {
-      break;  // Exit the outer loop if task limit is reached
+      break;  // Task limiti aşıldığında dış döngüden çıkıyoruz
     }
   }
 }
+
 
 
 async function start() {
