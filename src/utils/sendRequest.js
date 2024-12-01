@@ -1,4 +1,5 @@
 const {
+  helper,
   sendDataCollectRequest,
   StatusType,
   ServiceType,
@@ -78,13 +79,15 @@ async function sendRequest(id, domain) {
 
   try {
     // Send the data collection request
-    await sendDataCollectRequest({ value });
+    const trackId = helper.generateId(16)
+    const headers = { correlationId: trackId, trackId: trackId } // track this request
+    await sendDataCollectRequest({ value, headers });
 
     // Log success message
-    logger.notice(`[sendRequest] [${id}] success  :  ${url}`, { id, url });
+    logger.notice(`[sendRequest] [${id}] success  : ${headers.correlationId} - ${url}`, { id, url });
   } catch (error) {
     // Log error message
-    logger.error(`[sendRequest] [${id}] Failed   :  ${url} ${error.message}`, { id, url });
+    logger.error(`[sendRequest] [${id}] Failed   :  ${headers.correlationId} - ${url} ${error.message}`, { id, url });
   }
 }
 
