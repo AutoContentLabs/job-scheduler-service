@@ -29,7 +29,7 @@ services:
           cpus: "1.0"
           memory: "1g"
       restart_policy:
-        condition: always
+        condition: on-failure
       placement:
         constraints:
           - node.role == worker
@@ -63,7 +63,7 @@ services:
           cpus: "1.0"
           memory: "1g"
       restart_policy:
-        condition: always
+        condition: on-failure
       placement:
         constraints:
           - node.role == worker
@@ -97,7 +97,7 @@ services:
           cpus: "1.0"
           memory: "1g"
       restart_policy:
-        condition: always
+        condition: on-failure
       placement:
         constraints:
           - node.role == worker
