@@ -80,14 +80,14 @@ async function sendRequest(id, domain) {
   try {
     // Send the data collection request
     const trackId = helper.generateId(16)
-    const headers = { correlationId: trackId, trackId: trackId } // track this request
-    await sendDataCollectRequest({ value, headers });
+    const generatedHeaders = { correlationId: trackId, trackId: trackId } // track this request
+    await sendDataCollectRequest({ value, headers: generatedHeaders });
 
     // Log success message
-    logger.notice(`[sendRequest] [${id}] success  : ${headers.correlationId} - ${url}`, { id, url });
+    logger.notice(`[sendRequest] [${id}] success  : ${generatedHeaders.correlationId} - ${url}`, { id, url });
   } catch (error) {
     // Log error message
-    logger.error(`[sendRequest] [${id}] Failed   :  ${headers.correlationId} - ${url} ${error.message}`, { id, url });
+    logger.error(`[sendRequest] [${id}] Failed   :  ${generatedHeaders.correlationId} - ${url} ${error.message}`, { id, url });
   }
 }
 
