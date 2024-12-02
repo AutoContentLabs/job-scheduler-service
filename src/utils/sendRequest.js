@@ -79,8 +79,8 @@ async function sendRequest(id, domain) {
 
   try {
     // Send the data collection request
-    const trackId = helper.generateId(16)
-    const generatedHeaders = { correlationId: trackId, trackId: trackId } // track this request
+    const traceId = helper.generateId(16)
+    const generatedHeaders = { correlationId: traceId, traceId: traceId } // trace this request
     await sendDataCollectRequest({ value, headers: generatedHeaders });
 
     // Log success message
