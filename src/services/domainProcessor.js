@@ -1,122 +1,143 @@
 const { logger, helper } = require('@auto-content-labs/messaging');
 const getDomains = require('../utils/getDomains');
-const sendRequest = require('../utils/sendRequest');
-const calculateBatchSize = require('../utils/batchSize');
+const sendRequest = require('./sendRequest');
 const { calculateProgress } = require('../utils/progress');
 const fs = require('fs');
 const path = require('path');
-const taskStatusFile = 'files/taskStatus.json';
-const domainsDir = 'files/domains/';
 
-let taskCount = 0;
-let processedCount = 0;
-let failedCount = 0;
-let taskStatus = {};  // Keep task status in memory
-let changesToSave = false;
+const TASKS_FILE = 'files/tasks.json';
+const DOMAIN_DIR = 'files/domains/';
+// TASK LIMIT is task processing limit
+const TASK_LIMIT = process.env.TASK_LIMIT ? parseInt(process.env.TASK_LIMIT, 10) : null;
+// Maximum parallel tasks limit
+const MAX_PARALLEL_TASKS = process.env.MAX_PARALLEL_TASKS ? parseInt(process.env.MAX_PARALLEL_TASKS, 10) : 5;
 
-// Check if TASK_LIMIT environment variable is set, else use default (no limit)
-const taskLimit = process.env.TASK_LIMIT ? parseInt(process.env.TASK_LIMIT, 10) : null;
+const TASK = {
+  total: 0,
+  count: 0,
+  processed: 0,
+  failed: 0,
+  pending: 0
+}
+
+let TASKS_STATUS = {
+  "example.com": { id: 0, status: "que" }
+}
 
 async function loadTaskStatus() {
   try {
-    const data = await fs.promises.readFile(taskStatusFile, 'utf-8');
-    taskStatus = JSON.parse(data);
+    const data = await fs.promises.readFile(TASKS_FILE, 'utf-8');
+    TASKS_STATUS = JSON.parse(data);
   } catch (error) {
-    taskStatus = {};  // Initialize empty object if file doesn't exist
+    TASKS_STATUS = {};  // Initialize empty object if file doesn't exist
   }
 }
 
 async function saveTaskStatus() {
   if (changesToSave) {
-    await fs.promises.writeFile(taskStatusFile, JSON.stringify(taskStatus, null, 2));
+    await fs.promises.writeFile(TASKS_FILE, JSON.stringify(TASKS_STATUS, null, 2));
     changesToSave = false;  // Reset flag
   }
 }
 
-function getDomainFiles() {
-  return fs.readdirSync(domainsDir)
+async function getDomainFiles() {
+  return fs.readdirSync(DOMAIN_DIR)
     .filter(file => file.startsWith('domains_') && file.endsWith('.csv'))
-    .map(file => path.join(domainsDir, file));
+    .map(file => path.join(DOMAIN_DIR, file));
+}
+
+async function task(id, domain) {
+  const status = {
+    start: performance.now(),
+    end: 0,
+    duration: 0,
+    state: "pending",
+    domain: domain,
+    id: id
+  }
+  try {
+    const model = { id: id, service: { parameters: { domain: domain } } };
+    sendRequest(model);
+
+    status.end = performance.now();
+    status.duration = status.end - status.start;
+    status.state = "processed";
+
+    return status;
+  } catch (error) {
+    status.end = performance.now();
+    status.duration = status.end - status.start;
+    status.state = "failed";
+    logger.error(`Task failed for domain: ${domain} with error: ${error.message}`);
+  } finally {
+    //
+  }
+
+  return status;
 }
 
 async function processDomains() {
-  const domainFiles = getDomainFiles();
-  let totalTasks = 0;
-  let tasksProcessed = 0;
-  let startTime = Date.now();
-
+  const domainFiles = await getDomainFiles();
   for (let file of domainFiles) {
-    const domains = await getDomains(file);
-    totalTasks += domains.length;
-    const CONCURRENT_TASKS_LIMIT = Math.min(await calculateBatchSize(totalTasks), taskLimit ? taskLimit - tasksProcessed : Number.MAX_SAFE_INTEGER);
-
-    for (let i = 0; i < domains.length; i += CONCURRENT_TASKS_LIMIT) {
-      const chunk = domains.slice(i, i + CONCURRENT_TASKS_LIMIT);
-      logger.info(`[processDomains] CONCURRENT: ${CONCURRENT_TASKS_LIMIT} sending batch...`);
-
-      const tasks = chunk.map(async (domain) => {  // map içine async işaretini ekliyoruz
-        if (taskLimit && tasksProcessed >= taskLimit) {
-          logger.info(`[processDomains] Task limit of ${taskLimit} reached. Stopping further processing.`);
-          return;  // Task limitine ulaşıldığında işleme devam etmiyoruz
-        }
-
-        taskCount++;
-        const id = taskCount;
-
-        if (taskStatus[domain] === 'processed') {
-          logger.info(`[processDomains] [${id}] Skipping processed domain: ${domain}`);
-          return;  // İşlem yapılmış domainleri atlıyoruz
-        }
-
-        try {
-          await sendRequest(id, domain);  // sendRequest'i await ile çağırıyoruz
-
-          processedCount++;
-          taskStatus[domain] = 'processed';
-          tasksProcessed++;
-          changesToSave = true;
-
-          const { progressPercentage, formattedElapsedTime, formattedEstimatedTimeRemaining } = calculateProgress(
-            tasksProcessed,
-            totalTasks,
-            startTime
-          );
-          if (tasksProcessed % 10 === 0 || tasksProcessed === totalTasks) {
-            //logger.notice(`[✨] ${progressPercentage}%. Elapsed time: ${formattedElapsedTime}s. Estimated time remaining: ${formattedEstimatedTimeRemaining}s.`);
-          }
-
-        } catch (error) {
-          failedCount++;
-          taskStatus[domain] = 'failed';
-          changesToSave = true;
-        }
-      });
-
-      await Promise.all(tasks);  // Bütün task'lar tamamlanana kadar bekliyoruz
-      await saveTaskStatus();
-
-      if (taskLimit && tasksProcessed >= taskLimit) {
-        logger.info(`[processDomains] Task limit of ${taskLimit} reached. Stopping process.`);
-        break;  // Task limiti aşıldığında dış döngüden çıkıyoruz
-      }
+    if (TASK.processed >= TASK_LIMIT) {
+      logger.info('Task limit reached. Stopping further processing.');
+      return;
     }
 
-    if (taskLimit && tasksProcessed >= taskLimit) {
-      break;  // Task limiti aşıldığında dış döngüden çıkıyoruz
+    const domains = await getDomains(file);
+
+
+    // Process tasks in batches with MAX_PARALLEL_TASKS limit
+    const domainChunks = chunkArray(domains, MAX_PARALLEL_TASKS);
+
+    TASK.total += domainChunks.length;
+
+    for (let chunk of domainChunks) {
+      const taskPromises = chunk.map(async (item) => {
+        if (TASK.processed >= TASK_LIMIT) {
+          return;  // Stop processing if task limit reached
+        }
+
+        TASK.count++;
+
+        const status = await task(item.id, item.domain);
+        switch (status.state) {
+          case "processed":
+            TASK.processed++;
+            break;
+          case "failed":
+            TASK.failed++;
+            break;
+          default:
+            TASK.pending++;
+            break;
+        }
+
+        // Save the status in TASKS_STATUS
+        TASKS_STATUS[item.domain] = { id: item.id, status: status.state };
+      });
+
+      // Wait for all tasks in this chunk to complete
+      await Promise.all(taskPromises);
     }
   }
 }
 
-
+function chunkArray(array, size) {
+  const result = [];
+  for (let i = 0; i < array.length; i += size) {
+    result.push(array.slice(i, i + size));
+  }
+  return result;
+}
 
 async function start() {
   try {
-    logger.info("Application starting...");
-    await loadTaskStatus();  // Load initial task status
-    const startTime = Date.now();
+    logger.info(`Application starting... TASK_LIMIT: ${TASK_LIMIT}, MAX_PARALLEL_TASKS: ${MAX_PARALLEL_TASKS}`);
+    const startProcessDomainsTime = Date.now();
     await processDomains();
-    await saveTaskStatus();  // Final save
-    logger.notice(`Completed ${taskCount} tasks: ${processedCount} processed, ${failedCount} failed. Time: ${Date.now() - startTime}ms`);
+    const endProcessDomainsTime = Date.now();
+    logger.notice(`Completed task processing in ${endProcessDomainsTime - startProcessDomainsTime}ms. Task Stats: ${JSON.stringify(TASK)}`);
   } catch (error) {
     logger.error("Application failed to start", error);
   }
