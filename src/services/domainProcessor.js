@@ -91,9 +91,10 @@ async function task(id, domain) {
 
   try {
     const model = { id: id, service: { parameters: { domain: domain } } };
-    // sendRequest(model); // Burada `sendRequest` fonksiyonu yorum satırına alındı
-    console.log(`Processing task for domain: ${domain}`);
-    
+
+    sendRequest(model);
+    logger.info(`Task processed for domain: ${domain}`);
+
     status.end = performance.now();
     status.duration = status.end - status.start;
     status.state = "processed";
@@ -115,7 +116,7 @@ async function task(id, domain) {
 
 async function processDomains() {
   const domainFiles = await getDomainFiles();
-  
+
   for (let file of domainFiles) {
     if (TASK.processed >= TASK_LIMIT) {
       logger.info("Task limit reached. Stopping further processing.");
@@ -166,13 +167,13 @@ function chunkArray(array, size) {
 async function start() {
   try {
     logger.info(`Application starting... TASK_LIMIT: ${TASK_LIMIT}, MAX_PARALLEL_TASKS: ${MAX_PARALLEL_TASKS}`);
-    
+
     await loadTaskStatus();
 
     const startProcessDomainsTime = Date.now();
     await processDomains();
     const endProcessDomainsTime = Date.now();
-    
+
     logger.notice(`Completed task processing in ${endProcessDomainsTime - startProcessDomainsTime}ms. Task Stats: ${JSON.stringify(TASK)}`);
   } catch (error) {
     logger.error("Application failed to start", error);
