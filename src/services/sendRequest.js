@@ -1,5 +1,6 @@
+const { logger, helper } = require("@auto-content-labs/messaging-utils");
+
 const {
-  helper,
   sendDataCollectRequest,
   StatusType,
   ServiceType,
@@ -7,7 +8,6 @@ const {
   DataFormat,
   AccessMethod,
 } = require("@auto-content-labs/messaging");
-const { logger } = require("@auto-content-labs/messaging");
 
 /**
  * Sends a data collection request.
@@ -74,9 +74,8 @@ async function sendRequest(model) {
       ? `?${new URLSearchParams(filteredQueryParams).toString()}`
       : "";
 
-  const url = `${protocol}://${value.service.parameters.domain}:${port}${
-    path ? path : ""
-  }${queryString}`;
+  const url = `${protocol}://${value.service.parameters.domain}:${port}${path ? path : ""
+    }${queryString}`;
 
   const traceId = helper.generateId(16);
   const generatedHeaders = { correlationId: traceId, traceId: traceId };

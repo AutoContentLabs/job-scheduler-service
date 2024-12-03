@@ -1,7 +1,8 @@
+const { logger } = require("@auto-content-labs/messaging-utils");
+
 const csv = require("csv-parser");
 const fs = require("fs");
 const path = require("path");
-const { logger, helper } = require("@auto-content-labs/messaging");
 
 const sendRequest = require("./sendRequest");
 
