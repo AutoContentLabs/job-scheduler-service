@@ -92,7 +92,7 @@ async function task(id, domain) {
   try {
     const model = { id: id, service: { parameters: { domain: domain } } };
 
-    sendRequest(model);
+    await sendRequest(model);
     logger.info(`Task processed for domain: ${domain}`);
 
     status.end = performance.now();
