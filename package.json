@@ -16,6 +16,7 @@
     "@auto-content-labs/messaging": "github:AutoContentLabs/messaging",
     "@auto-content-labs/messaging-utils": "github:AutoContentLabs/messaging-utils",
     "@dotenvx/dotenvx": "^1.26.2",
+    "axios": "^1.7.9",
     "csv-parser": "^3.0.0"
   }
 }
